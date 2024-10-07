@@ -441,7 +441,7 @@ public class Game extends Application implements GameScreen {
   }
 
   public void setScore(int score) {
-	this.scoreText.setText("Score: " + score);
+	this.scoreText.setText("Games finished: " + score);
   }
 
   public void setLives(int lives) {

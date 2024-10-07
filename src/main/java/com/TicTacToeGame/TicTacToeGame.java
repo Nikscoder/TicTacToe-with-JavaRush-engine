@@ -8,18 +8,25 @@ public class TicTacToeGame extends Game {
     private final int[][] model; // board for game
     private int currentPlayer; // actual user
     private boolean isGameStopped;
+    private int SCORE = 0;
 
     //Constructor to initialize vairables and methods with massives
     public TicTacToeGame(){
         model = new int[3][3];
-        //currentPlayer = 1;
+    }
+
+    public void initialize(){
+        setScreenSize(3, 3);
+        startGame();
+        updateView();
     }
 
     public void startGame(){
         isGameStopped = false;
         currentPlayer=1;
-        for (int i=0; i<model.length; i++){
-            for (int j = 0; j<model[i].length; j++){
+
+        for (int i=0; i<model.length; i++) {
+            for (int j = 0; j < model[i].length; j++) {
                 model[i][j] = 0;
             }
         }
@@ -47,6 +54,7 @@ public class TicTacToeGame extends Game {
         }
         return false;
     }
+
     public void updateView(){
         for (int i = 0; i < model.length; i++){
             for (int j = 0; j < model[i].length; j++) {
@@ -55,22 +63,58 @@ public class TicTacToeGame extends Game {
         }
     }
 
-    public void computerTurn(){
-        // if the central point (1,1) is empty (equeals 0) put 1
-        if (model[1][1] == 0){
-            setSignAndCheck(1,1);
+    public void computerTurn() {
+        // if the central point (1,1) is empty (equals 0) put 1
+        if (model[1][1] == 0) {
+            setSignAndCheck(1, 1);
             return;
         }
-        for (int i = 0; i< model.length;i++){ //3
-            for (int j = 0; j < model[i].length; j++){
-                if (model[i][j] == 0){
-                    setSignAndCheck(i,j);
+        // computer try to win (verify of the empty cells on the board)
+        for (int i = 0; i < model.length; i++) {
+            for (int j = 0; j < model[i].length; j++) {
+                if (model[i][j] == 0 && checkFutureWin(i, j, currentPlayer)) {
+                    setSignAndCheck(i, j);
+                    return;
+                }
+            }
+        }
+        // prevent the winning of the user and move in this cell to protect.
+        for (int i = 0; i < model.length; i++) {
+            for (int j = 0; j < model[i].length; j++) {
+                if (model[i][j] == 0 && checkFutureWin(i, j, 3-currentPlayer)) {
+                    setSignAndCheck(i, j);
+                    return;
+                }
+            }
+        }
+        // if no above options are vslid, then move to  empty cell on the board
+        for (int i = 0; i < model.length; i++) {
+            for (int j = 0; j < model[i].length; j++) {
+                if (model[i][j] == 0) {
+                    setSignAndCheck(i, j);
                     return;
                 }
             }
         }
     }
-    // method to verify if this field is empty and we can paste X or O in this field
+
+    // checkFutureWin method to verify if by the next move we can  win
+    public boolean checkFutureWin(int x, int y, int n){
+        if (model[x][y] != 0) {
+            return false;
+        }
+        int originalBoardState = model[x][y];
+        // do move to check
+        model[x][y] = n;
+        //check the move
+        boolean willWin = checkWin(x,y,n);
+        // restore the original state of the board
+        model[x][y] = originalBoardState;
+
+        return willWin;
+
+    }
+    // method to verify if this field is empty, and we can move X in this cell
     public void onMouseLeftClick(int x, int y) {
         //showMessageDialog(Color.RED, "You"+ currentPlayer, Color.WHITE, 75);
         if (isGameStopped || model[x][y] != 0) {
@@ -78,14 +122,19 @@ public class TicTacToeGame extends Game {
             return;
         }
         setSignAndCheck(x,y);
-        computerTurn();
-        //currentPlayer = 3 - currentPlayer;
+        if(!isGameStopped){
+            currentPlayer = 3 - currentPlayer; // 2 <--> 1
+            computerTurn();
+            if (!isGameStopped){
+                currentPlayer = 3 - currentPlayer;
+            }
+        }
     }
 
     // method to do an update on the board
     public void setSignAndCheck (int x, int y){
         model[x][y] = currentPlayer;
-        updateView(); // visible changed board after currentPlayer was done.
+        updateView(); // visible changed board after currentPlayer was moved.
 
         // check if we have the winner
         if (checkWin(x, y, currentPlayer)){
@@ -97,63 +146,32 @@ public class TicTacToeGame extends Game {
                 showMessageDialog(Color.NONE, "Game over!", Color.RED, 75);
             }
         }
-        else if (checkWin(x,y,currentPlayer) == false && hasEmptyCell() == false) {
-            showMessageDialog(Color.NONE, " Draw!",  Color.BLUE, 75);
+        else if (!hasEmptyCell()) {
             isGameStopped = true;
+            showMessageDialog(Color.NONE, " Draw!",  Color.BLUE, 75);
         }
-        currentPlayer = 3 - currentPlayer;
     }
 
     public boolean checkWin(int x, int y, int n){
-        boolean winHorizontal = true;
-        for (int j = 0; j<model[x].length;j++){
-            if(model[x][j] != n){
-                winHorizontal = false;
-                break;
-            }
-        }
-        boolean winVertical = true;
-        for (int i = 0; i<model.length;i++){
-            if (model[i][y] != n){
-                winVertical = false;
-                break;
-            }
-        }
-        boolean winMainDiagonal = true;
-        // 0,0 -> 1,1 -> 2,2
-        for (int i = 0; i < model.length; i++) {
-            if(model[i][i] != n) {
-                winMainDiagonal = false;
-                break;
-            }
-        }
-        boolean winAntiDiagonal = true;
-        // 0,2 -> 1,1 ->2,0
-        //model.length = 3
-        for (int i = 0; i < model.length; i++) {
-            if (model[i][model.length-1-i] != n){
-                winAntiDiagonal = false;
-                break;
-            }
-        }
-        if (winHorizontal || winVertical || winMainDiagonal || winAntiDiagonal){
-            isGameStopped = true;
+        if (model[x][0] == n && model[x][1] == n && model[x][2] == n)
             return true;
-        }
+        if (model[0][y] == n && model[1][y] == n && model[2][y] == n)
+            return true;
+        if (model[0][0] == n && model[1][1] == n && model[2][2] == n)
+            return true;
+        if (model[0][2] == n && model[1][1] == n && model[2][0] == n)
+            return true;
         return false;
     }
 
     // menu to start or finish the game
     public void onKeyPress(Key key) {
-        if (key == Key.SPACE && isGameStopped == true || key == Key.ESCAPE) {
+        if (key == Key.SPACE && isGameStopped || key == Key.ESCAPE) {
+            SCORE++;
+            setScore(SCORE);
             startGame();
             updateView();
         }
     }
 
-    public void initialize(){
-        setScreenSize(3, 3);
-        startGame();
-        updateView();
-    }
 }
